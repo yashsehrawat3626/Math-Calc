@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Math Solver</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/mathjs@12.4.1/lib/browser/math.js"></script>
+  <style>
+    :root {
+      --bg-gradient: linear-gradient(135deg, #fff 0%, #f3e8ff 70%, #a259f7 100%);
+      --glass-bg: rgba(255,255,255,0.92);
+      --glass-border: rgba(162, 89, 247, 0.18);
+      --primary: #a259f7;
+      --primary-dark: #7c2ae8;
+      --text-main: #3d246c;
+      --text-secondary: #7d5fa5;
+      --input-bg: rgba(255,255,255,0.97);
+      --input-focus: #a259f7;
+      --shadow: 0 12px 48px 0 rgba(162, 89, 247, 0.13);
+      --radius: 22px;
+      --transition: 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+      --symbol-bg: #a259f7;
+      --symbol-opacity: 0.32;
+    }
+    html, body {
+      min-height: 100vh;
+      margin: 0;
+      padding: 0;
+      background: var(--bg-gradient);
+      font-family: 'Montserrat', 'Segoe UI', Arial, sans-serif;
+      color: var(--text-main);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      transition: background var(--transition);
+      position: relative;
+      overflow-x: hidden;
+    }
+    /* Background maths symbols */
+    .bg-maths-symbols {
+      position: fixed;
+      inset: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: 0;
+      pointer-events: none;
+      overflow: hidden;
+    }
+    .bg-maths-symbol {
+      position: absolute;
+      font-size: 7vw;
+      font-weight: 700;
+      color: var(--symbol-bg);
+      opacity: var(--symbol-opacity);
+      filter: blur(1.2px);
+      user-select: none;
+      pointer-events: none;
+      font-family: 'Montserrat', Arial, sans-serif;
+      transition: opacity 0.7s;
+      white-space: pre;
+      line-height: 1;
+      text-shadow: 0 4px 32px #a259f7;
+    }
+    .bg-plus    { top: 8%;   left: 12%;  transform: rotate(-12deg);}
+    .bg-minus   { top: 70%;  left: 13%;  transform: rotate(8deg);}
+    .bg-mult    { top: 20%;  left: 70%;  transform: rotate(-18deg);}
+    .bg-div     { top: 65%;  left: 75%;  transform: rotate(11deg);}
+    .bg-plus2   { top: 40%;  left: 45%;  transform: rotate(7deg);}
+    .bg-minus2  { top: 80%;  left: 50%;  transform: rotate(-14deg);}
+    .bg-mult2   { top: 10%;  left: 80%;  transform: rotate(20deg);}
+    .bg-div2    { top: 50%;  left: 10%;  transform: rotate(-7deg);}
+    @media (max-width: 600px) {
+      .bg-maths-symbol { font-size: 16vw; }
+      .bg-plus    { top: 6%;   left: 8%; }
+      .bg-minus   { top: 70%;  left: 6%; }
+      .bg-mult    { top: 22%;  left: 65%; }
+      .bg-div     { top: 68%;  left: 70%; }
+      .bg-plus2   { top: 36%;  left: 45%; }
+      .bg-minus2  { top: 80%;  left: 40%; }
+      .bg-mult2   { top: 10%;  left: 80%; }
+      .bg-div2    { top: 54%;  left: 20%; }
+    }
+    h1 {
+      margin-top: 60px;
+      margin-bottom: 0;
+      font-size: 2.5em;
+      font-weight: 700;
+      letter-spacing: 1.4px;
+      color: var(--primary-dark);
+      user-select: none;
+      text-align: center;
+      text-shadow: 0 4px 24px #a259f7aa;
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      z-index: 10;
+      position: relative;
+    }
+    .logo-icon {
+      width: 48px;
+      height: 48px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      justify-content: center;
+      align-content: center;
+    }
+    .logo-icon svg {
+      width: 20px;
+      height: 20px;
+      stroke: var(--primary-dark);
+      fill: transparent;
+      stroke-width: 2;
+      border-radius: 50%;
+      background: transparent;
+      transition: stroke 0.3s;
+    }
+    .logo-icon circle {
+      fill: transparent;
+      stroke: var(--primary-dark);
+      stroke-width: 2;
+    }
+    .logo-icon path,
+    .logo-icon line {
+      stroke: var(--primary-dark);
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      stroke-width: 2;
+    }
+    .container {
+      background: var(--glass-bg);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow), 0 1.5px 0 0 var(--glass-border) inset;
+      padding: 44px 36px 28px 36px;
+      margin-top: 34px;
+      width: 97%;
+      max-width: 430px;
+      transition: box-shadow var(--transition), background var(--transition);
+      backdrop-filter: blur(18px);
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      border: 1.5px solid var(--glass-border);
+      overflow: hidden;
+      z-index: 10;
+    }
+    form {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 12px;
+    }
+    input[type='text'] {
+      flex: 1 1 60%;
+      background: var(--input-bg);
+      color: var(--text-main);
+      border: 1.5px solid transparent;
+      border-radius: 13px;
+      padding: 16px 20px;
+      font-size: 1.13em;
+      outline: none;
+      box-shadow: 0 1px 12px #a259f711;
+      transition: box-shadow var(--transition), background var(--transition), border var(--transition);
+      font-family: inherit;
+      font-weight: 500;
+      letter-spacing: 0.2px;
+    }
+    input[type='text']:focus {
+      box-shadow: 0 2px 18px #a259f733;
+      background: rgba(255, 255, 255, 0.98);
+      border: 1.5px solid var(--primary);
+    }
+    button {
+      background: linear-gradient(90deg, var(--primary) 0%, var(--primary-dark) 100%);
+      color: #fff;
+      border: none;
+      border-radius: 13px;
+      padding: 15px 28px;
+      font-size: 1.13em;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 2px 16px #a259f733;
+      transition: background var(--transition), transform var(--transition), box-shadow var(--transition), color var(--transition);
+      outline: none;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      letter-spacing: 0.2px;
+      font-family: inherit;
+    }
+    button:hover,
+    button:focus {
+      background: linear-gradient(90deg, var(--primary-dark) 0%, var(--primary) 100%);
+      color: #fff;
+      transform: translateY(-2px) scale(1.04);
+      box-shadow: 0 4px 24px #a259f755;
+    }
+    .hint {
+      margin-top: 10px;
+      font-size: 1em;
+      color: var(--text-secondary);
+      text-align: center;
+      letter-spacing: 0.1px;
+      background: none;
+      border-radius: 0;
+      padding: 0;
+      margin-bottom: 2px;
+      box-shadow: none;
+    }
+    .result {
+      margin-top: 25px;
+      font-size: 1.15em;
+      background: rgba(162, 89, 247, 0.07);
+      padding: 19px 13px;
+      border-radius: 14px;
+      min-height: 36px;
+      word-break: break-word;
+      box-shadow: 0 2px 12px #a259f714;
+      transition: background var(--transition);
+      text-align: center;
+      font-weight: 500;
+      color: var(--text-main);
+      letter-spacing: 0.2px;
+      border: 1.2px solid var(--glass-border);
+    }
+    .result b {
+      color: var(--primary-dark);
+      font-weight: 700;
+    }
+    @media (max-width: 600px) {
+      h1 {
+        font-size: 1.8em;
+        gap: 12px;
+      }
+      .logo-icon {
+        width: 38px;
+        height: 38px;
+      }
+      .container {
+        padding: 14px 5px 10px 5px;
+      }
+      form {
+        flex-direction: column;
+        gap: 10px;
+      }
+      input[type='text'],
+      button {
+        width: 100%;
+      }
+      .result {
+        font-size: 1em;
+        padding: 10px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Background maths symbols -->
+  <div class="bg-maths-symbols" aria-hidden="true">
+    <span class="bg-maths-symbol bg-plus">+</span>
+    <span class="bg-maths-symbol bg-minus">−</span>
+    <span class="bg-maths-symbol bg-mult">×</span>
+    <span class="bg-maths-symbol bg-div">÷</span>
+    <span class="bg-maths-symbol bg-plus2">+</span>
+    <span class="bg-maths-symbol bg-minus2">−</span>
+    <span class="bg-maths-symbol bg-mult2">×</span>
+    <span class="bg-maths-symbol bg-div2">÷</span>
+  </div>
+  <h1>
+    <div class="logo-icon" aria-label="Math symbols logo" role="img" title="Math symbols logo">
+      <!-- Plus sign -->
+      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <circle cx="12" cy="12" r="11" />
+        <line x1="12" y1="7" x2="12" y2="17" />
+        <line x1="7" y1="12" x2="17" y2="12" />
+      </svg>
+      <!-- Minus sign -->
+      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <circle cx="12" cy="12" r="11" />
+        <line x1="7" y1="12" x2="17" y2="12" />
+      </svg>
+      <!-- Multiply sign -->
+      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <circle cx="12" cy="12" r="11" />
+        <line x1="7" y1="7" x2="17" y2="17" />
+        <line x1="17" y1="7" x2="7" y2="17" />
+      </svg>
+      <!-- Divide sign -->
+      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <circle cx="12" cy="12" r="11" />
+        <circle cx="12" cy="7" r="1.5" fill="var(--primary-dark)" />
+        <line x1="7" y1="12" x2="17" y2="12" />
+        <circle cx="12" cy="17" r="1.5" fill="var(--primary-dark)" />
+      </svg>
+    </div>
+    Math Solver
+  </h1>
+  <div class="container">
+    <form id="mathForm" autocomplete="off">
+      <input
+        type="text"
+        id="mathInput"
+        placeholder="Type your math problem (e.g., area circle radius 5)"
+        autofocus
+        required
+      />
+      <button type="submit">
+        Solve
+      </button>
+    </form>
+    <div class="hint">
+      Try: <b>2 + 2</b>, <b>2 plus 2</b>, <b>log(10)</b>, <b>log of 10</b>, <b>area circle radius 5</b>, <b>area of circle of radius 5</b>, <b>perimeter circle radius 5</b>
+    </div>
+    <div class="result" id="result"></div>
+  </div>
+  <script>
+    function degToRad(deg) {
+      return '(' + deg + ' * pi / 180)';
+    }
+
+    function preprocess(input) {
+      let expr = input.toLowerCase().trim();
+
+      // Minimal phrasing support
+      expr = expr.replace(/area ?circle ?radius ([\d.]+)/, (m, r) => `pi*(${r})^2`);
+      expr = expr.replace(/(perimeter|circumference) ?circle ?radius ([\d.]+)/, (m, _1, r) => `2*pi*${r}`);
+
+      // Existing flexible patterns
+      expr = expr.replace(/area( of)?( a)? ?circle( (with|of))? radius ([\d.]+)/, (m, _1, _2, _3, _4, _5, r) => `pi*(${r})^2`);
+      expr = expr.replace(/(perimeter|circumference)( of)?( a)? ?circle( (with|of))? radius ([\d.]+)/, (m, _1, _2, _3, _4, _5, r) => `2*pi*${r}`);
+
+      expr = expr.replace(/\bplus\b/g, '+');
+      expr = expr.replace(/\bminus\b/g, '-');
+      expr = expr.replace(/\btimes\b/g, '*');
+      expr = expr.replace(/\bmultiplied by\b/g, '*');
+      expr = expr.replace(/\bdivided by\b/g, '/');
+      expr = expr.replace(/\bmod(ulo)?\b/g, ' mod ');
+      expr = expr.replace(/\bto the power of\b/g, '^');
+      expr = expr.replace(/\braised to\b/g, '^');
+      expr = expr.replace(/\bpi\b/g, 'pi');
+      expr = expr.replace(/sqrt of ([^ ]+)/g, 'sqrt($1)');
+      expr = expr.replace(/log of ([^ ]+)/g, 'log($1)');
+      expr = expr.replace(/ln of ([^ ]+)/g, 'ln($1)');
+      expr = expr.replace(/sin of ([\d.]+)/g, (m, d) => `sin(${degToRad(d)})`);
+      expr = expr.replace(/sin of ([^ ]+)/g, 'sin($1)');
+      expr = expr.replace(/cos of ([\d.]+)/g, (m, d) => `cos(${degToRad(d)})`);
+      expr = expr.replace(/cos of ([^ ]+)/g, 'cos($1)');
+      expr = expr.replace(/tan of ([\d.]+)/g, (m, d) => `tan(${degToRad(d)})`);
+      expr = expr.replace(/tan of ([^ ]+)/g, 'tan($1)');
+      expr = expr.replace(/arcsin of ([^ ]+)/g, 'asin($1)');
+      expr = expr.replace(/arccos of ([^ ]+)/g, 'acos($1)');
+      expr = expr.replace(/arctan of ([^ ]+)/g, 'atan($1)');
+      expr = expr.replace(/integrate (.+) dx/g, 'integrate($1, x)');
+      expr = expr.replace(/derivative of (.+)/g, 'derivative($1, x)');
+      expr = expr.replace(/cube root of ([^ ]+)/g, 'cbrt($1)');
+      expr = expr.replace(/([a-z\d.]+) squared/g, '$1^2');
+      expr = expr.replace(/([a-z\d.]+) cubed/g, '$1^3');
+      expr = expr.replace(/\bthe\b/g, '');
+      expr = expr.replace(/\bof\b/g, '');
+      expr = expr.replace(/\s+/g, ' ').trim();
+
+      return expr;
+    }
+
+    document.getElementById('mathForm').addEventListener('submit', function (event) {
+      event.preventDefault();
+      const input = document.getElementById('mathInput').value;
+      const resultDiv = document.getElementById('result');
+      let expr = preprocess(input);
+
+      try {
+        let simplified = math.simplify(expr).toString();
+        let evaluated = math.evaluate(expr);
+
+        if (simplified.includes('pi') && typeof evaluated !== 'number') {
+          resultDiv.innerHTML = `<b>Result:</b> ${simplified}`;
+        } else if (typeof evaluated === 'number' && Math.abs(evaluated) > 1e-8) {
+          resultDiv.innerHTML = `<b>Result:</b> ${simplified} ≈ <b>${evaluated}</b>`;
+        } else {
+          resultDiv.innerHTML = `<b>Result:</b> ${simplified}`;
+        }
+      } catch (e) {
+        try {
+          let evaluated = math.evaluate(expr);
+          resultDiv.innerHTML = `<b>Result:</b> ${evaluated}`;
+        } catch (err) {
+          resultDiv.innerHTML = `<span style="color:#a259f7">Sorry, I couldn't solve that. Please check your input.</span>`;
+        }
+      }
+    });
+  </script>
+</body>
+</html>
